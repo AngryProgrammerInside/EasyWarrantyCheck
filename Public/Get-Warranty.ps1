@@ -109,7 +109,7 @@ function Get-Warranty {
         "EDSYS" {
             $Warobj = Get-WarrantyEdsys -Serial $serialnumber -DateFormat $DateFormat
         }
-        "ASUS" {
+        "*ASUS*" {
             $Warobj = Get-WarrantyAsus -Serial $serialnumber -DateFormat $DateFormat
         }
         "LENOVO" {
@@ -126,7 +126,7 @@ function Get-Warranty {
                 $Warobj = Get-WarrantyHP -Serial $serialnumber -DateFormat $DateFormat
             }
         }
-        "MICROSOFT" {
+        "*MICROSOFT*" {
             if ($($machineinfo.Model) -like 'SurfaceNotSupportedYet') {
                 $Warobj = Get-WarrantyMicrosoft -Serial $serialnumber -DateFormat $DateFormat
             }
