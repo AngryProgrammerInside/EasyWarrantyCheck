@@ -32,7 +32,7 @@ function Get-WarrantyHP {
     $ChromeService = [OpenQA.Selenium.Chrome.ChromeDriverService]::CreateDefaultService($WebDriverPath, 'chromedriver.exe')
     $ChromeService.HideCommandPromptWindow = $true
     $chromeOptions = [OpenQA.Selenium.Chrome.ChromeOptions]::new()
-    $chromeOptions.AddArgument("headless")
+    #$chromeOptions.AddArgument("headless")
     $chromeOptions.AddArgument("--log-level=3")
     # Start a new browser session with headless mode
     try {
@@ -149,7 +149,7 @@ function Get-WarrantyHP {
     }
     # Find the element containing the 'Start date' text
     try {
-        $startDateElement = $driver.FindElementByXPath("//div[@class='info-item ng-tns-c70-0 ng-star-inserted']//div[@class='label ng-tns-c70-0' and contains(text(), 'Start date')]/following-sibling::div[@class='text ng-tns-c70-0']")
+        $startDateElement = $driver.FindElementByXPath("//div[@class='info-item ng-tns-c75-0 ng-star-inserted']//div[@class='label ng-tns-c75-0' and contains(text(), 'Start date')]/following-sibling::div[@class='text ng-tns-c75-0']")
     }
     catch {
         $startDateElement = $null
@@ -169,7 +169,7 @@ function Get-WarrantyHP {
     }     
     try {
         # Find the element containing the 'End date' text
-        $endDateElement = $driver.FindElementByXPath("//div[@class='info-item ng-tns-c70-0 ng-star-inserted']//div[@class='label ng-tns-c70-0' and contains(text(), 'End date')]/following-sibling::div[@class='text ng-tns-c70-0']")
+        $endDateElement = $driver.FindElementByXPath("//div[@class='info-item ng-tns-c75-0 ng-star-inserted']//div[@class='label ng-tns-c75-0' and contains(text(), 'End date')]/following-sibling::div[@class='text ng-tns-c75-0']")
     }
     catch {
         $endDateElement = $null
@@ -189,7 +189,7 @@ function Get-WarrantyHP {
     }     
     try {
         # Find the element containing the 'Warranty Status' or 'Time Remaining' text
-        $warrantyStatusElement = $driver.FindElementByXPath("//div[@class='info-item ng-tns-c70-0 ng-star-inserted']//div[@class='label ng-tns-c70-0' and contains(text(), 'Time Remaining')]/following-sibling::div[@class='text ng-tns-c70-0']")       
+        $warrantyStatusElement = $driver.FindElementByXPath("//div[@class='info-item ng-tns-c75-0 ng-star-inserted']//div[@class='label ng-tns-c75-0' and contains(text(), 'Time Remaining')]/following-sibling::div[@class='text ng-tns-c75-0']")       
     }
     catch {
         $warrantyStatusElement = $null
