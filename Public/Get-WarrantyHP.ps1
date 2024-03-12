@@ -32,7 +32,7 @@ function Get-WarrantyHP {
     $ChromeService = [OpenQA.Selenium.Chrome.ChromeDriverService]::CreateDefaultService($WebDriverPath, 'chromedriver.exe')
     $ChromeService.HideCommandPromptWindow = $true
     $chromeOptions = [OpenQA.Selenium.Chrome.ChromeOptions]::new()
-    #$chromeOptions.AddArgument("headless")
+    $chromeOptions.AddArgument("headless")
     $chromeOptions.AddArgument("--log-level=3")
     # Start a new browser session with headless mode
     try {
