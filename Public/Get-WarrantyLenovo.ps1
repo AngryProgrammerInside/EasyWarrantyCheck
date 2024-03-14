@@ -25,8 +25,6 @@ function Get-WarrantyLenovo {
         )
         Write-Host "Checking Lenovo website for serial : $Serial"
         Write-Host "Waiting for results......."
-        [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls11 -bor [System.Net.SecurityProtocolType]::Tls12;
-
         $APIURL = "https://pcsupport.lenovo.com/us/en/api/v4/mse/getproducts?productId=$Serial"
         try {
             $WarReq = Invoke-RestMethod -Uri $APIURL -Method get
@@ -54,25 +52,25 @@ function Get-WarrantyLenovo {
             $warfirst.Start = Convert-EpochToDateTime -EpochTimestamp $($warfirst.Start)
             $warlatest.End = Convert-EpochToDateTime -EpochTimestamp $($warlatest.End)
             $WarObj = [PSCustomObject]@{
-                'Serial' = $jsonWarranties.Serial
+                'Serial'                = $jsonWarranties.Serial
                 'Warranty Product name' = $jsonWarranties.ProductName
-                'StartDate' = $warfirst.Start
-                'EndDate' = $warlatest.End
-                'Warranty Status' = $warrantystatus
-                'Client' = $null
-                'Product Image' = $jsonWarranties.ProductImage
-                'Warranty URL' = $jsonWarranties.WarrantyUpgradeURLInfo.WarrantyURL
+                'StartDate'             = $warfirst.Start
+                'EndDate'               = $warlatest.End
+                'Warranty Status'       = $warrantystatus
+                'Client'                = $null
+                'Product Image'         = $jsonWarranties.ProductImage
+                'Warranty URL'          = $jsonWarranties.WarrantyUpgradeURLInfo.WarrantyURL
             }
         } else {
             $WarObj = [PSCustomObject]@{
-                'Serial' = $Serial
+                'Serial'                = $Serial
                 'Warranty Product name' = $null
-                'StartDate' = $null
-                'EndDate' = $null
-                'Warranty Status' = 'Could not get warranty information'
-                'Client' = $null
-                'Product Image' = $null
-                'Warranty URL' = $null
+                'StartDate'             = $null
+                'EndDate'               = $null
+                'Warranty Status'       = 'Could not get warranty information'
+                'Client'                = $null
+                'Product Image'         = $null
+                'Warranty URL'          = $null
             }
         } 
     return $WarObj

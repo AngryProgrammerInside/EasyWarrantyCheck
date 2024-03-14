@@ -1,13 +1,13 @@
-function Get-WarrantyAsus {
+function Get-WarrantyTerra {
     <#
         .SYNOPSIS
-        Function to get Asus Warranty
+        Function to get Terra Warranty
     
         .DESCRIPTION
-        This function will get Asus Warranty
+        This function will get Terra Warranty
     
         .EXAMPLE
-        Get-WarrantyAsus -Serial "SerialNumber"
+        Get-WarrantyTerra -Serial "SerialNumber"
     
         .PARAMETER Serial
         Set Serial
@@ -59,64 +59,62 @@ function Get-WarrantyAsus {
             return $warObj
         }
         # Navigate to the warranty check URL
-        Write-Host "Checking Asus website for serial : $Serial"
-        $driver.Navigate().GoToUrl("https://www.asus.com/support/warranty-status-inquiry")
+        Write-Host "Checking Terra website for serial : $Serial"
+        $driver.Navigate().GoToUrl("https://www.wortmann.de/en-gb/profile/snsearch.aspx")
         # Locate and input the serial number into the form
         $serialnumber = $Serial
-        $inputField = $driver.FindElementById("warrantyNumber")
+        $inputField = $driver.FindElementById("ctl00_ctl00_ctl00_SiteContent_SiteContent_SiteContent_textSerialNo")
         $inputField.SendKeys($serialnumber)
-        #Accept Checkbox
-        try{
-            $submitcheckcookiesButton = $driver.FindElementByXPath("//div[@class='btn-asus btn-ok btn-read-ck' and @aria-label='Accept']")
-            $submitcheckcookiesButton.Click()
-        } catch{
-            Write-Verbose $_.Exception.Message
-        }
-        $checkPrivacyButton = $driver.FindElementById("checkPrivacy")
-        $checkPrivacyButton.Click()
         # Find and click the submit button
-        $submitButton = $driver.FindElementByXPath("//button[@class='submit-button blue' and @aria-label='Submit']")
+        $submitButton = $driver.FindElementById("ctl00_ctl00_ctl00_SiteContent_SiteContent_SiteContent_LinkButtonSearch")
         $submitButton.Click()
         Write-Host "Waiting for results......."
-        start-sleep -Seconds 10
+        start-sleep -Seconds 15
         # Find the rows in the table
-        $rows = $driver.FindElementsByXPath("//div[@role='rowgroup' and @class='result-item']//li[@role='cell']")
-        # Define arrays to store column headers and data
-        $columns = @("Product Series", "Model Name", "Product Serial Number", "Warranty Status", "Warranty Expiry" )
-        $data = @()
-        
-        # Extract data rows
+        # Find the table element by its ID
+        $table = $driver.FindElementById("ctl00_ctl00_ctl00_SiteContent_SiteContent_SiteContent_DetailsViewProductInfo")
+
+        # Get all rows from the table
+        $rows = $table.FindElements([OpenQA.Selenium.By]::TagName("tr"))
+
+        # Create an empty hashtable to store the field-value pairs
+        $table1 = @{}
+
+        # Iterate over each row in the table
         foreach ($row in $rows) {
-            $rowData = $row.FindElementByTagName("span").Text.Trim()
-            $data += $rowData
+            # Get the cells from the row
+            $cells = $row.FindElements([OpenQA.Selenium.By]::TagName("td"))
+            
+            # Extract the field name and value
+            $fieldName = $cells[0].Text
+            $fieldValue = $cells[1].Text
+            
+            # Add the field and value to the hashtable
+            $table1[$fieldName] = $fieldValue
         }
-        # Create a PowerShell custom object representing the table
-        $table = New-Object PSObject
-        for ($i = 0; $i -lt $columns.Count; $i++) {
-            $table | Add-Member -MemberType NoteProperty -Name $columns[$i] -Value $data[$i]
-        }
-        
-        # Check if the "Within Warranty" text exists
-        if ($($table.'Warranty Status') -eq "Within Warranty" -or $($table.'Warranty Status') -eq 'Under Warranty(Active)') {
-            # "Within Warranty" text found
-            $warrantystatus = "Within Warranty"
-            # Additional actions if needed
-        } else {
-            # Write-Host "Expired"
-            $warrantystatus = "Expired"
-        }
-        
+
         # Close the browser
         Stop-SeleniumModule -WebDriver $DriverMode
-        $datestring = $($table.'Warranty Expiry')
-        $warEndDate = [DateTime]::ParseExact($dateString, "yyyy/MM/dd", [System.Globalization.CultureInfo]::InvariantCulture)
+        $warEndDate = $($table1.'Warranty ending date')
+        $warEndDate = [DateTime]::ParseExact($warEndDate, "dd/MM/yyyy", [System.Globalization.CultureInfo]::InvariantCulture)
         $warEndDate = $warEndDate.ToString($dateformat)
+
+        $warstartDate = $($table1.'Warranty starting date')
+        $warstartDate= [DateTime]::ParseExact($warstartDate, "dd/MM/yyyy", [System.Globalization.CultureInfo]::InvariantCulture)
+        $warstartDate = $warstartDate.ToString($dateformat)
+
+        $warrantyStatus = $null
+        if ((Get-Date $warEndDate) -gt (Get-Date)) {
+            $warrantyStatus = "Within Warranty"
+        } else {
+            $warrantyStatus = "Expired"
+        }
         
-        if ($($table.'Warranty Status')) {
+        if ($warrantyStatus) {
             $WarObj = [PSCustomObject]@{
                 'Serial'                = $serialnumber
-                'Warranty Product name' = $($table.'Model Name')
-                'StartDate'             = $null
+                'Warranty Product name' = $($table1.'Description')
+                'StartDate'             = $warstartDate
                 'EndDate'               = $warEndDate
                 'Warranty Status'       = $warrantystatus
                 'Client'                = $null

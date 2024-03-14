@@ -22,7 +22,7 @@ function Get-MachineInfo {
 		[Parameter(Mandatory = $false)]
 		[String]$Serial= 'Automatic',
         [Parameter(Mandatory = $false)]
-        [ValidateSet('Automatic', 'Dell', 'HP', 'Edsys', 'Asus', 'Lenovo', 'TOSHIBA', 'Intel Corporation')]
+        [ValidateSet('Automatic', 'Dell', 'HP', 'Edsys', 'Asus', 'Lenovo', 'TOSHIBA', 'Intel Corporation' , 'Terra' , 'Wortmann')]
 		[String]$Manufacturer= 'Automatic'
 	)
     $SerialNumber = if ($Serial -eq 'Automatic') {
@@ -38,6 +38,8 @@ function Get-MachineInfo {
             "IBM" { $Mfg = "LENOVO" }
             "Hewlett-Packard" { $Mfg = "HP" }
             {$_ -match "Asus"} { $Mfg = "ASUS" }
+            {$_ -match "Wortmann"} { $Mfg = "TERRA" }
+            {$_ -match "Terra"} { $Mfg = "TERRA" }
             {$_ -match "Dell"} { $Mfg = "DELL" }
             {$_ -match "HP"} { $Mfg = "HP" }
             {$_ -match "Edsys"} { $Mfg = "EDSYS" }

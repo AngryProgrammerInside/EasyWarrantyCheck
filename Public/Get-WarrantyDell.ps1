@@ -23,42 +23,44 @@ function Get-WarrantyDell {
             [Parameter(Mandatory = $false)]
             [String]$DateFormat = 'dd-MM-yyyy'
         )
-        Get-WebDriver
-        Get-SeleniumModule
-        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls, [Net.SecurityProtocolType]::Tls11, [Net.SecurityProtocolType]::Tls12, [Net.SecurityProtocolType]::Ssl3
-        [Net.ServicePointManager]::SecurityProtocol = "Tls, Tls11, Tls12, Ssl3"
-        $URL = "https://www.dell.com/support/productsmfe/en-us/productdetails?selection=$serial&assettype=svctag&appname=warranty&inccomponents=false&isolated=false"
-        $WebDriverPath = "C:\temp\chromedriver-win64"
-        # Set Chrome options to run in headless mode
-        $ChromeService = [OpenQA.Selenium.Chrome.ChromeDriverService]::CreateDefaultService($WebDriverPath, 'chromedriver.exe')
-        $ChromeService.HideCommandPromptWindow = $true
-        $chromeOptions = [OpenQA.Selenium.Chrome.ChromeOptions]::new()
-        $chromeOptions.AddArgument("headless")
-        $chromeOptions.AddArgument("--log-level=3")
+
+        if ($browsersupport -eq $false){
+            $WarObj = [PSCustomObject]@{
+                'Serial'                = $Serial
+                'Warranty Product name' = $null
+                'StartDate'             = $null
+                'EndDate'               = $null
+                'Warranty Status'       = 'Could not get warranty information'
+                'Client'                = $null
+                'Product Image'         = $null
+                'Warranty URL'          = $null
+            }
+            Remove-Module Selenium -Verbose:$false
+            return $warObj
+        }
         # Start a new browser session with headless mode
         try{
-            $driver = New-Object OpenQA.Selenium.Chrome.ChromeDriver($ChromeService, $chromeOptions)
+            Get-WebDriver -WebDriver $DriverMode
+            Get-SeleniumModule
+            $driver = Start-SeleniumModule -WebDriver $DriverMode -Headless $true
         }catch{
-            Write-Host "###########################"
-            Write-Host "WARNING"
-            Write-Host "Google Chrome not detected"
-            Write-Host "This manufacturer currently requires Google Chrome installed to check expiry"
-            Write-Host "###########################"
+            Write-Verbose $_.Exception.Message
             $WarObj = [PSCustomObject]@{
-                'Serial' = $Serial
+                'Serial'                = $Serial
                 'Warranty Product name' = $null
-                'StartDate' = $null
-                'EndDate' = $null
-                'Warranty Status' = 'Could not get warranty information'
-                'Client' = $null
-                'Product Image' = $null
-                'Warranty URL' = $null
+                'StartDate'             = $null
+                'EndDate'               = $null
+                'Warranty Status'       = 'Could not get warranty information'
+                'Client'                = $null
+                'Product Image'         = $null
+                'Warranty URL'          = $null
             }
-            Remove-Module Selenium
+            Remove-Module Selenium -Verbose:$false
             return $warObj
         }
         # Navigate to the warranty check URL
         Write-Host "Checking Dell website for serial : $Serial"
+        $URL = "https://www.dell.com/support/productsmfe/en-us/productdetails?selection=$serial&assettype=svctag&appname=warranty&inccomponents=false&isolated=false"
         $driver.Navigate().GoToUrl("$URL")
         Write-Host "Waiting for results......."
         Start-Sleep -Seconds 25
@@ -89,34 +91,50 @@ function Get-WarrantyDell {
                 $warEndDate = $FormattedDate
                 $warrantystatus = "In Warranty"
             }
+            # Try for Start Date
+            try {
+                $checkDeviceDetails = $driver.FindElementByClassName("dds__button--secondary")
+                $checkDeviceDetails.Click()
+                Start-Sleep -Seconds 10
+                $ManageServicesButton = $driver.FindElementByClassName("viewDetailsWarranty")
+                $ManageServicesButton.Click()
+                Start-Sleep -Seconds 10
+                $PurchaseDateElement = $driver.FindElementById("dsk-purchaseDt")
+                $PurchaseDate = $PurchaseDateElement.Text
+                $WarrantystartDate = [datetime]::ParseExact($PurchaseDate, "dd MMM yyyy", [System.Globalization.CultureInfo]::InvariantCulture)
+                $warStartDate = $WarrantystartDate.ToString($dateformat)
+            } catch {
+                Write-Host "The purchase date field could not be found."
+                $warStartDate = $null
+            }
+            
         } else {
-            Write-Host "No matching text found for warranty status"
+            Write-Host "No matching text found for warranty end date "
         }
         # Close the browser
-        $driver.Quit()
-        Remove-Module Selenium
+        Stop-SeleniumModule -WebDriver $DriverMode
 
         if ($warrantystatus) {
             $WarObj = [PSCustomObject]@{
-                'Serial' = $serial
+                'Serial'                = $serial
                 'Warranty Product name' = $null
-                'StartDate' = $null
-                'EndDate' = $warEndDate
-                'Warranty Status' = $warrantystatus
-                'Client' = $null
-                'Product Image' = $null
-                'Warranty URL' = $null
+                'StartDate'             = $warStartDate
+                'EndDate'               = $warEndDate
+                'Warranty Status'       = $warrantystatus
+                'Client'                = $null
+                'Product Image'         = $null
+                'Warranty URL'          = $null
             }
         } else {
             $WarObj = [PSCustomObject]@{
-                'Serial' = $serial
+                'Serial'                = $serial
                 'Warranty Product name' = $null
-                'StartDate' = $null
-                'EndDate' = $null
-                'Warranty Status' = 'Could not get warranty information'
-                'Client' = $null
-                'Product Image' = ""
-                'Warranty URL' = ""
+                'StartDate'             = $null
+                'EndDate'               = $null
+                'Warranty Status'       = 'Could not get warranty information'
+                'Client'                = $null
+                'Product Image'         = $null
+                'Warranty URL'          = $null
             }
         } 
     return $WarObj

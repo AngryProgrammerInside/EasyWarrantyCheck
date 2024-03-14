@@ -23,7 +23,13 @@ function Get-Warranty {
         [Parameter(Mandatory = $false, ParameterSetName = 'Default')]
         [ValidateSet('NinjaRMM', 'None')]
         [String]$RMM = 'NinjaRMM',
-    
+        
+        # Web Driver mode, Edge or Chrome ( Edge Beta Support )
+        [Parameter(Mandatory = $false, ParameterSetName = 'Default')]
+        [Parameter(Mandatory = $false, ParameterSetName = 'CentralNinja')]
+        [ValidateSet('Chrome', 'Edge')]
+        [String]$Seleniumdrivermode = 'Chrome',
+
         # ServerMode, exclusive to CentralNinja but included in Default for consistency
         [Parameter(Mandatory = $false, ParameterSetName = 'CentralNinja')]
         [Switch]$ServerMode,
@@ -31,7 +37,7 @@ function Get-Warranty {
         # Enable Registry Storing
         [Parameter(Mandatory = $false, ParameterSetName = 'Default')]
         [bool]$EnableRegistry = $true,
-    
+
         # Registry Path
         [Parameter(Mandatory = $false, ParameterSetName = 'Default')]
         [String]$RegistryPath = 'HKLM:\SOFTWARE\RMMCustomInfo\',
@@ -41,6 +47,7 @@ function Get-Warranty {
         [bool]$ForceUpdate = $false,
     
         # Custom Machine Details, available in both sets
+        [Parameter(Mandatory = $false, ParameterSetName = 'Default')]
         [Parameter(Mandatory = $false, ParameterSetName = 'CentralNinja')]
         [String]$Serial = 'Automatic',
     
@@ -84,6 +91,10 @@ function Get-Warranty {
     if ($ForceUpdate -eq $true) {
         Set-Variable ForceUpdate -Value $ForceUpdate -Scope Global -option ReadOnly -Force
     }
+    if ($Seleniumdrivermode) {
+        $browsersupport = Test-BrowserSupport -Browser $Seleniumdrivermode
+        if ($browsersupport -eq $false) {Set-Variable Browsersupport -Value $false -Scope Global -option ReadOnly -Force}
+    }
     if ($PSCmdlet.ParameterSetName -eq 'Default') {
         $machineinfo = Get-MachineInfo
         if ($serial -eq 'Automatic') {
@@ -103,9 +114,12 @@ function Get-Warranty {
         $mfg = $Manufacturer
         $global:ServerMode = $true
     }
-        
+    
     $Notsupported = $false
     switch -Wildcard ($mfg) {
+        "TERRA" {
+            $Warobj = Get-WarrantyTerra -Serial $serialnumber -DateFormat $DateFormat
+        }
         "EDSYS" {
             $Warobj = Get-WarrantyEdsys -Serial $serialnumber -DateFormat $DateFormat
         }

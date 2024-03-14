@@ -2,6 +2,121 @@
 
 ## [Unreleased]
 
+# [1.0.5] - 14-03-2024
+
+### Added
+
+- Failover support from Chrome to Edge
+- Failover support from Edge to Chrome
+- Logged in user detection from Edge support
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+- Cleanup of some formatting
+
+# [1.0.4] - 13-03-2024
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+- Terra table check fix
+- Removed error in test script
+
+# [1.0.3] - 13-03-2024
+
+### Added
+
+- Added Terra warranty support
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+# [1.0.2] - 11-03-2024
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+- HP Lookup function
+
+# [1.0.1] - 11-03-2024
+
+### Added
+
+- Minor Verbose logging
+
+### Changed
+
+- Modules now check for specific version
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+- Chrome Bug
+
+# [1.0.0] - 10-03-2024
+
+### Added
+
+- Edge Support running as user context
+
+### Changed
+
+- Edge webdriver runs as user context
+- Rewrite of WebDriver install
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+- Stopping Selenium errors
+
+# [0.9.9] - 08-03-2024
+
+### Added
+
+- Beta Edge surpport
+
+### Changed
+
+- WebDriver now checks if exists
+- WebDriver now has check for Chrome/Edge
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
 # [0.9.3] - 22-02-2024
 
 ### Added

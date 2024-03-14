@@ -25,26 +25,8 @@ function Get-WarrantyHP {
         [Parameter(Mandatory = $false)]
         [String]$SystemSKU
     )
-    Get-WebDriver
-    Get-SeleniumModule
-    $WebDriverPath = "C:\temp\chromedriver-win64"
-    # Set Chrome options to run in headless mode
-    $ChromeService = [OpenQA.Selenium.Chrome.ChromeDriverService]::CreateDefaultService($WebDriverPath, 'chromedriver.exe')
-    $ChromeService.HideCommandPromptWindow = $true
-    $chromeOptions = [OpenQA.Selenium.Chrome.ChromeOptions]::new()
-    $chromeOptions.AddArgument("headless")
-    $chromeOptions.AddArgument("--log-level=3")
-    # Start a new browser session with headless mode
-    try {
-        $driver = New-Object OpenQA.Selenium.Chrome.ChromeDriver($ChromeService, $chromeOptions)
-    }
-    catch {
-        if ($PSCmdlet.ParameterSetName -eq 'Default') {
-            Write-Host "###########################"
-            Write-Host "WARNING"
-            Write-Host "Google Chrome not detected"
-            Write-Host "This manufacturer currently requires Google Chrome installed to check expiry"
-            Write-Host "###########################"
+
+        if ($browsersupport -eq $false){
             Write-Host "Estimating Details from Registry"
             try {
                 $regPath = "HKLM:\SOFTWARE\WOW6432Node\HP\HPActiveSupport\HPSF\Warranty"
@@ -63,7 +45,7 @@ function Get-WarrantyHP {
                     'Product Image'         = $null
                     'Warranty URL'          = $null
                 }
-                Remove-Module Selenium
+                Remove-Module Selenium -Verbose:$false
                 return $warObj
             }
             catch {
@@ -78,14 +60,31 @@ function Get-WarrantyHP {
                     'Product Image'         = $null
                     'Warranty URL'          = $null
                 }
-                Remove-Module Selenium
+                Remove-Module Selenium -Verbose:$false
                 return $warObj
             }
         }
-        else {
-            Write-Error "Google Chrome not detected"
+        # Start a new browser session with headless mode
+        try{
+            Get-WebDriver -WebDriver $DriverMode
+            Get-SeleniumModule
+            $driver = Start-SeleniumModule -WebDriver $DriverMode -Headless $true
+        }catch{
+            Write-Verbose $_.Exception.Message
+            $WarObj = [PSCustomObject]@{
+                'Serial' = $Serial
+                'Warranty Product name' = $null
+                'StartDate' = $null
+                'EndDate' = $null
+                'Warranty Status' = 'Could not get warranty information'
+                'Client' = $null
+                'Product Image' = $null
+                'Warranty URL' = $null
+            }
+            Remove-Module Selenium -Verbose:$false
+            return $warObj
         }
-    }
+
     # Navigate to the warranty check URL
     Write-Host "Checking HP website for serial : $Serial"
     $driver.Navigate().GoToUrl("https://support.hp.com/au-en/check-warranty")
@@ -104,13 +103,13 @@ function Get-WarrantyHP {
         $errorMsgElement = $driver.FindElementByClassName("errorTxt")
     }
     catch {
-        Write-Debug "No Product Model required"
+        Write-Verbose "No Product Model required"
     }
 
     if ($null -ne $errorMsgElement -and $null -ne $SystemSKU) {
         # Error message found
         Write-Host "Using SystemSKU input"
-        Write-Debug "Need Product ID"
+        Write-Verbose "Need Product ID"
         $productField = $driver.FindElementById("product-number inputtextPN")
         $productField.SendKeys($SystemSKU)
         $submitButton = $driver.FindElementById("FindMyProductNumber")
@@ -124,7 +123,7 @@ function Get-WarrantyHP {
     elseif ($null -ne $errorMsgElement -and $global:ServerMode -ne $true) {
         # Error message found
         Write-Host "Searching for additional SystemSKU......."
-        Write-Debug "Need Product ID"
+        Write-Verbose "Need Product ID"
         # Define the registry path
         $regPath = "HKLM:\HARDWARE\DESCRIPTION\System\BIOS"
         # Get the value of "SystemSKU" if it exists
@@ -149,19 +148,13 @@ function Get-WarrantyHP {
     }
     # Find the element containing the 'Start date' text
     try {
-        $startDateElement = $driver.FindElementByXPath("//div[@class='info-item ng-tns-c75-0 ng-star-inserted']//div[@class='label ng-tns-c75-0' and contains(text(), 'Start date')]/following-sibling::div[@class='text ng-tns-c75-0']")
+        $startDateElement = $driver.FindElementByXPath("//div[contains(@class,'info-item')]//div[contains(@class,'label') and contains(text(), 'Start date')]/following-sibling::div[contains(@class,'text')]")
     }
     catch {
         $startDateElement = $null
+        Write-Host "Could not find warranty Start date"
     }
-    if (-not $startDateElement) {
-        try {
-            $startDateElement = $driver.FindElementByXPath("//div[@class='info-item ng-tns-c72-0 ng-star-inserted']//div[@class='label ng-tns-c72-0' and contains(text(), 'Start date')]/following-sibling::div[@class='text ng-tns-c72-0']")
-        }
-        catch {
-            Write-Host "Could not find warranty Start date"
-        }
-    }
+
     if ($startDateElement) {
         # Get the text of the 'Start date' element
         $startDateText = $startDateElement.Text
@@ -169,19 +162,14 @@ function Get-WarrantyHP {
     }     
     try {
         # Find the element containing the 'End date' text
-        $endDateElement = $driver.FindElementByXPath("//div[@class='info-item ng-tns-c75-0 ng-star-inserted']//div[@class='label ng-tns-c75-0' and contains(text(), 'End date')]/following-sibling::div[@class='text ng-tns-c75-0']")
+        $endDateElement = $driver.FindElementByXPath("//div[contains(@class,'info-item')]//div[contains(@class,'label') and contains(text(), 'End date')]/following-sibling::div[contains(@class,'text')]")
+
     }
     catch {
         $endDateElement = $null
+        Write-Host "Could not find warranty End date"
     }
-    if (-not $endDateElement) {
-        try {
-            $endDateElement = $driver.FindElementByXPath("//div[@class='info-item ng-tns-c72-0 ng-star-inserted']//div[@class='label ng-tns-c72-0' and contains(text(), 'End date')]/following-sibling::div[@class='text ng-tns-c72-0']")
-        }
-        catch {
-            Write-Host "Could not find warranty End date"
-        }
-    }
+
     if ($endDateElement) {
         # Get the text of the 'End date' element
         $endDateText = $endDateElement.Text
@@ -189,19 +177,13 @@ function Get-WarrantyHP {
     }     
     try {
         # Find the element containing the 'Warranty Status' or 'Time Remaining' text
-        $warrantyStatusElement = $driver.FindElementByXPath("//div[@class='info-item ng-tns-c75-0 ng-star-inserted']//div[@class='label ng-tns-c75-0' and contains(text(), 'Time Remaining')]/following-sibling::div[@class='text ng-tns-c75-0']")       
+        $warrantyStatusElement = $driver.FindElementByXPath("//div[contains(@class,'info-item')]//div[contains(@class,'label') and contains(text(), 'Time Remaining')]/following-sibling::div[contains(@class,'text')]")
     }
     catch {
         $warrantyStatusElement = $null
+        Write-Host "Could not find warranty Status"
     }
-    if (-not $warrantyStatusElement) {
-        try {
-            $warrantyStatusElement = $driver.FindElementByXPath("//div[@class='info-item ng-tns-c72-0 ng-star-inserted']//div[@class='label ng-tns-c72-0' and contains(text(), 'Time Remaining')]/following-sibling::div[@class='text ng-tns-c72-0']")       
-        }
-        catch {
-            Write-Host "Could not find warranty Status"
-        } 
-    }
+
     if ($warrantyStatusElement) {
         $warrantyStatusText = $warrantyStatusElement.Text
         if ($warrantyStatusText -match "Expired") {
@@ -210,26 +192,18 @@ function Get-WarrantyHP {
     }     
     try {
         # Find the element containing the 'Product' information
-        $h2Element = $driver.FindElementByCssSelector(".product-info-text.ng-tns-c70-0 > h2")
+        $h2Element = $driver.FindElementByXPath("//main//h2")
     }
     catch {
         $h2Element = $null
+        Write-Host "Could not find Product Name"
     }
-    if (-not $h2Element) {
-        try {
-            # Find the element containing the 'Product' information
-            $h2Element = $driver.FindElementByCssSelector(".product-info-text.ng-tns-c72-0 > h2")
-        }
-        catch {
-            $h2Element = $null
-        }
-    }
+    
     if ($h2Element) {
         $product = $h2Element.Text
     }
     # Close the browser
-    $driver.Quit()
-    Remove-Module Selenium
+    Stop-SeleniumModule -WebDriver $DriverMode
 
     if ($endDateText) {
         $warfirst = $startDateText

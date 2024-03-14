@@ -26,8 +26,6 @@ function Get-WarrantyEdsys {
         # Define the URL
         Write-Host "Checking Edsys website for serial : $Serial"
         Write-Host "Waiting for results......."
-        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls, [Net.SecurityProtocolType]::Tls11, [Net.SecurityProtocolType]::Tls12, [Net.SecurityProtocolType]::Ssl3
-        [Net.ServicePointManager]::SecurityProtocol = "Tls, Tls11, Tls12, Ssl3"
         $url = "https://edsys.com.au/check-warranty-status/"
 
         # Define the payload as a query string
@@ -40,7 +38,7 @@ function Get-WarrantyEdsys {
         try {
             $response = Invoke-WebRequest -Uri $url -Method Post -Body $payload -ContentType "application/x-www-form-urlencoded" -UseBasicParsing
         }catch{
-            Write-Host $($_.Exception.Message)
+            Write-Verbose $_.Exception.Message
         }
         if($response){
         # Output the response
@@ -124,27 +122,27 @@ function Get-WarrantyEdsys {
         }
         if ($($table.'Warranty Status')) {
             $WarObj = [PSCustomObject]@{
-                'Serial' = $Serial
-                'Invoice' = $($table.'Invoice')
+                'Serial'                = $Serial
+                'Invoice'               = $($table.'Invoice')
                 'Warranty Product name' = $($table.'Product Name')
-                'StartDate' = $warfirst
-                'EndDate' = $warEndDate
-                'Warranty Status' = $warrantystatus
-                'Client' = $null
-                'Product Image' = $null
-                'Warranty URL' = $null
+                'StartDate'             = $warfirst
+                'EndDate'               = $warEndDate
+                'Warranty Status'       = $warrantystatus
+                'Client'                = $null
+                'Product Image'         = $null
+                'Warranty URL'          = $null
             }
         } else {
             $WarObj = [PSCustomObject]@{
-                'Serial' = $Serial
-                'Invoice' = $null
+                'Serial'                = $Serial
+                'Invoice'               = $null
                 'Warranty Product name' = $null
-                'StartDate' = $null
-                'EndDate' = $null
-                'Warranty Status' = 'Could not get warranty information'
-                'Client' = $null
-                'Product Image' = $null
-                'Warranty URL' = $null
+                'StartDate'             = $null
+                'EndDate'               = $null
+                'Warranty Status'       = 'Could not get warranty information'
+                'Client'                = $null
+                'Product Image'         = $null
+                'Warranty URL'          = $null
             }
         }
     return $WarObj
